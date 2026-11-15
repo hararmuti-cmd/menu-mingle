@@ -12,7 +12,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { dashboardQuery } from "@/lib/menu-queries";
 import { saveItem, saveCategory, deleteEntry } from "@/lib/menu.functions";
 import { itemSchema } from "@/lib/menu-schema";
-import { menuImages, menuImage, menuUrl } from "@/lib/menu-images";
+import { menuImages, menuImage } from "@/lib/menu-images";
 export const Route = createFileRoute("/_authenticated/dashboard")({
   loader: ({ context }) => context.queryClient.ensureQueryData(dashboardQuery),
   head: () => ({ meta: [
@@ -26,6 +26,7 @@ type Category = Tables<"menu_categories">;
 const tabs = [{ id: "items", label: "Ürünler", icon: UtensilsCrossed }, { id: "categories", label: "Kategoriler", icon: LayoutGrid }, { id: "qr", label: "QR kod", icon: QrCode }] as const;
 const field = "w-full rounded-md border border-border bg-input px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-ring";
 function Dashboard() {
+  const menuUrl = typeof window === "undefined" ? "/" : `${window.location.origin}/`;
   const { data } = useSuspenseQuery(dashboardQuery);
   const client = useQueryClient(); const navigate = useNavigate();
   const saveProduct = useServerFn(saveItem); const saveCat = useServerFn(saveCategory); const remove = useServerFn(deleteEntry);

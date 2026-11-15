@@ -1,10 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { menuQuery } from "@/lib/menu-queries";
+import { menuImage } from "@/lib/menu-images";
 import { useMemo, useState } from "react";
 import { Coffee, Heart, Search, SlidersHorizontal } from "lucide-react";
-import espresso from "@/assets/espresso.jpg";
-import flatwhite from "@/assets/flatwhite.jpg";
-import icedlatte from "@/assets/icedlatte.jpg";
-import frappe from "@/assets/frappe.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -17,31 +16,11 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(menuQuery),
   component: Menu,
 });
 
-type Item = { id: number; name: string; category: string; price: number; old?: number; img: string; desc: string };
-
-const CATEGORIES = [
-  { id: "all", label: "Tümü" },
-  { id: "sicak", label: "Sıcak Kahve" },
-  { id: "soguk", label: "Soğuk Kahve" },
-  { id: "frappe", label: "Frappuccino" },
-  { id: "mocha", label: "Mocha" },
-];
-
-const ITEMS: Item[] = [
-  { id: 1, name: "Espresso", category: "sicak", price: 65, old: 80, img: espresso, desc: "Yoğun ve aromatik" },
-  { id: 2, name: "Flat White", category: "sicak", price: 140, old: 170, img: flatwhite, desc: "İpeksi süt köpüğü" },
-  { id: 3, name: "Cappuccino", category: "sicak", price: 120, img: flatwhite, desc: "Klasik İtalyan" },
-  { id: 4, name: "Americano", category: "sicak", price: 90, img: espresso, desc: "Sıcak su ve espresso" },
-  { id: 5, name: "Iced Latte", category: "soguk", price: 150, img: icedlatte, desc: "Buz, süt ve espresso" },
-  { id: 6, name: "Cold Brew", category: "soguk", price: 160, img: icedlatte, desc: "18 saat demlenmiş" },
-  { id: 7, name: "Karamel Frappuccino", category: "frappe", price: 190, old: 220, img: frappe, desc: "Karamel soslu" },
-  { id: 8, name: "Vanilya Frappuccino", category: "frappe", price: 180, img: frappe, desc: "Kremalı vanilya" },
-  { id: 9, name: "Mocha", category: "mocha", price: 160, img: flatwhite, desc: "Çikolata ve espresso" },
-  { id: 10, name: "Iced Mocha", category: "mocha", price: 170, img: icedlatte, desc: "Buzlu çikolatalı" },
-];
+type Item = { id: string; name: string; category: string; price: number; old?: number; img: string; desc: string };
 
 const SORTS = [
   { id: "default", label: "Önerilen" },
@@ -50,11 +29,14 @@ const SORTS = [
 ];
 
 function Menu() {
-  const [category, setCategory] = useState("sicak");
+  const { data } = useSuspenseQuery(menuQuery);
+  const CATEGORIES = useMemo(() => [{ id: "all", label: "Tümü" }, ...data.categories.map((c) => ({ id: c.id, label: c.name }))], [data]);
+  const ITEMS: Item[] = useMemo(() => data.items.map((i) => ({ id: i.id, name: i.name, category: i.category_id, price: Number(i.price), old: i.old_price == null ? undefined : Number(i.old_price), img: menuImage(i.image), desc: i.description })), [data]);
+  const [category, setCategory] = useState(data.categories[0]?.id ?? "all");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("default");
   const [showSort, setShowSort] = useState(false);
-  const [favs, setFavs] = useState<number[]>([]);
+  const [favs, setFavs] = useState<string[]>([]);
 
   const visible = useMemo(() => {
     const q = query.trim().toLocaleLowerCase("tr");
@@ -64,14 +46,15 @@ function Menu() {
     if (sort === "asc") list = [...list].sort((a, b) => a.price - b.price);
     if (sort === "desc") list = [...list].sort((a, b) => b.price - a.price);
     return list;
-  }, [category, query, sort]);
+  }, [category, query, sort, ITEMS]);
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-lg px-4 pb-10">
-      <header className="-mx-4 flex h-44 items-center justify-center rounded-b-3xl bg-cream">
+      <header className="relative -mx-4 flex h-44 items-center justify-center rounded-b-3xl bg-cream">
         <div className="flex h-16 w-16 items-center justify-center rounded-full border border-cream-foreground/50 text-cream-foreground">
           <Coffee className="h-8 w-8" strokeWidth={1.25} />
         </div>
+        <Link to="/dashboard" className="absolute right-4 top-4 rounded-full bg-background/70 px-3 py-1.5 text-xs font-medium text-foreground">Yönetim</Link>
       </header>
 
       <nav className="no-scrollbar -mx-4 mt-5 flex gap-2 overflow-x-auto px-4">
