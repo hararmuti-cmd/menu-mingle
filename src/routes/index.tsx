@@ -20,7 +20,7 @@ export const Route = createFileRoute("/")({
   component: Menu,
 });
 
-type Item = { id: string; name: string; category: string; price: number; old?: number; img: string; desc: string };
+type Item = { id: string; name: string; category: string; price: number; old?: number | undefined; img: string; desc: string };
 
 const SORTS = [
   { id: "default", label: "Önerilen" },
